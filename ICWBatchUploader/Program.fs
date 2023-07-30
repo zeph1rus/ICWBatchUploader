@@ -15,10 +15,6 @@ module ICWBatchUploader.MainModule
             true
         with error -> printfn $"Unable to delete file {error.Message}"; false
     
-    let constructUrl:string =
-        match config.secure with
-        | true -> $"https://{config.icwHostName}:{config.icwPort}/api_filesubmit"
-        | false -> $"http://{config.icwHostName}:{config.icwPort}/api_filesubmit"
         
     let toLower (inStr:string):string =
         // note for me - the () allows the compiler to figure out the return type for tolower
@@ -47,6 +43,15 @@ module ICWBatchUploader.MainModule
         async {
             use fileContent = createFileHttpContent path
             use client = new HttpClient()
+            
+            // if we don't construct this function in here the compiler will compile in the initial values
+            // TODO: Do this more elegantly
+            
+            let constructUrl:string =
+                match config.secure with
+                | true -> $"https://{config.icwHostName}:{config.icwPort}/api_filesubmit"
+                | false -> $"http://{config.icwHostName}:{config.icwPort}/api_filesubmit"
+            
             try
                 let! response = Async.AwaitTask(client.PostAsync(constructUrl, fileContent))
                 printfn $"{path} - {response.StatusCode}"
@@ -77,7 +82,7 @@ module ICWBatchUploader.MainModule
             | false -> "will not"
             
         printfn $"Files {willWont} be deleted after they are successfully uploaded"
-        
+        printfn $"{config}"
         scanDir config.directoryToUpload
         |> Array.filter canIngest
         |> Array.map uploadFile
