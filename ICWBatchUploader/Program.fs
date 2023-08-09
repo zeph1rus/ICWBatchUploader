@@ -6,15 +6,34 @@ module ICWBatchUploader.MainModule
     open System.Net.Http.Headers
 
     let mutable config:ParseArgs.CommandLineOptions = ParseArgs.defaults
-    let scanDir (dir:string):string array =
-        System.IO.Directory.GetFiles dir
+
+    let rec scanDir (path: string) : array<string> =
+        let mutable newFiles = [||]
+
+        try
+            newFiles <- System.IO.Directory.GetFiles(path)
+
+            printfn $"Scanned Directory {path} - files: {newFiles.Length}"
+
+            let dirList = System.IO.Directory.GetDirectories(path)
+
+            if dirList.Length > 0 then
+
+                for d in dirList do
+                    let subDirFiles = scanDir d
+                    newFiles <- Array.append subDirFiles newFiles
+
+            newFiles
+        with error ->
+            printfn $"Couldn't Read Directory {path}: {error.Message}"
+            newFiles
 
     let tryDeleteFile (path:string):bool =
         try
             System.IO.File.Delete(path)
             true
         with error -> printfn $"Unable to delete file {error.Message}"; false
-    
+        
         
     let toLower (inStr:string):string =
         // note for me - the () allows the compiler to figure out the return type for tolower
