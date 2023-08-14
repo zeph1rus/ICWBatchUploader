@@ -57,7 +57,22 @@ module ICWBatchUploader.MainModule
         fileContent.Headers.ContentType <- MediaTypeHeaderValue.Parse("multipart/form-data")
         content.Add(fileContent, "file", path)
         content
-
+    
+    let triggerProcImage =
+        async {
+            use client = new HttpClient()
+            let content = new MultipartFormDataContent()
+            let constructUrl:string =
+                match config.secure with
+                | true -> $"https://{config.icwHostName}:{config.icwPort}/api_procimage"
+                | false -> $"http://{config.icwHostName}:{config.icwPort}/api_procimage"
+            try
+                let! _ = Async.AwaitTask(client.PostAsync(constructUrl, content))
+                printfn("Running Procimage")
+                ()
+            with error -> printfn $"%s{error.Message}"
+        }
+    
     let uploadFile path =
         async {
             use fileContent = createFileHttpContent path
@@ -68,8 +83,8 @@ module ICWBatchUploader.MainModule
             
             let constructUrl:string =
                 match config.secure with
-                | true -> $"https://{config.icwHostName}:{config.icwPort}/api_filesubmit"
-                | false -> $"http://{config.icwHostName}:{config.icwPort}/api_filesubmit"
+                | true -> $"https://{config.icwHostName}:{config.icwPort}/api_uploadfile"
+                | false -> $"http://{config.icwHostName}:{config.icwPort}/api_uploadfile"
             
             try
                 let! response = Async.AwaitTask(client.PostAsync(constructUrl, fileContent))
@@ -108,5 +123,7 @@ module ICWBatchUploader.MainModule
         |> Async.Sequential
         |> Async.Ignore
         |> Async.RunSynchronously
+        
+        Async.Sequential [|triggerProcImage|] |> Async.RunSynchronously |> ignore
         
         0
