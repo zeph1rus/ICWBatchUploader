@@ -117,13 +117,17 @@ module ICWBatchUploader.MainModule
             
         printfn $"Files {willWont} be deleted after they are successfully uploaded"
         printfn $"{config}"
+        
+        
+        // If you don't reverse pipe array.append prepends the parameter to the array meaning procimage runs first
+        // which means images don't get ingested
         scanDir config.directoryToUpload
         |> Array.filter canIngest
         |> Array.map uploadFile
+        |> Array.append <| [|triggerProcImage|]  
         |> Async.Sequential
         |> Async.Ignore
         |> Async.RunSynchronously
         
-        Async.Sequential [|triggerProcImage|] |> Async.RunSynchronously |> ignore
         
         0
