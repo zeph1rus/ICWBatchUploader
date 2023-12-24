@@ -48,6 +48,7 @@ module ICWBatchUploader.MainModule
         | ".jpeg_large" -> true
         | ".png" -> true
         | ".webp" -> true
+        | ".jfif" -> true
         | _ -> false
 
     let createFileHttpContent (path:string):MultipartFormDataContent =
